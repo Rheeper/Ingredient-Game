@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ingredientdle — The daily ingredient guessing game</title>
+<meta name="description" content="A new dish every day. Can you guess what went into it? Pick the right ingredients before you run out of hearts.">
+<meta name="theme-color" content="#f6f3ee">
+<meta property="og:title" content="Ingredientdle">
+<meta property="og:description" content="A new dish every day. Can you guess every ingredient?">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23c8431c'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='white' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='white'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f3ee; --surface:#ffffff; --sunken:#efeae2; --ink:#1c1917; --ink2:#44403c; --mute:#78716c; --line:#e4ded3;
+  --brand:#c8431c; --brand-d:#a63514; --ok:#2d7a4d; --ok-d:#216039; --okbg:#e6f2ea;
+  --bad:#b83a32; --badbg:#fbeceb;
+  --shadow-s:0 1px 2px rgba(28,25,23,.05); --shadow-m:0 1px 2px rgba(28,25,23,.06),0 12px 32px -8px rgba(28,25,23,.18);
+  --serif:"Fraunces","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#14110f; --surface:#1f1b18; --sunken:#27221e; --ink:#f5f0e8; --ink2:#d6cfc4; --mute:#9a9085; --line:#352f29;
+  --brand:#ef6a3f; --brand-d:#c8431c; --ok:#4fa876; --ok-d:#2d7a4d; --okbg:#18301f; --bad:#ec6a60; --badbg:#35201e;
+  --shadow-m:0 1px 2px rgba(0,0,0,.4),0 12px 32px -8px rgba(0,0,0,.6);
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:8px}
+svg{display:block}
+
+/* ---------- header ---------- */
+.bar{border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);position:sticky;top:0;z-index:20}
+.bar-in{max-width:640px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;font:600 22px/1 var(--serif);letter-spacing:-.02em}
+.brand svg{width:28px;height:28px}
+.tools{display:flex;gap:2px}
+.tool{width:40px;height:40px;display:grid;place-items:center;border-radius:10px;color:var(--ink2);transition:background .15s}
+.tool:hover{background:var(--sunken)}
+.tool svg{width:22px;height:22px}
+
+main{flex:1;width:100%;max-width:640px;margin:0 auto;padding:22px 20px 40px}
+
+/* ---------- masthead ---------- */
+.kicker{font:600 12px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--brand);margin:0 0 10px}
+h1{font:600 clamp(26px,5.4vw,34px)/1.12 var(--serif);letter-spacing:-.02em;margin:0 0 6px}
+.lede{margin:0 0 20px;color:var(--mute);font-size:15px}
+.lede b{color:var(--ink2);font-weight:600}
+
+/* ---------- hero image ---------- */
+.hero{position:relative;border-radius:20px;overflow:hidden;background:var(--sunken);aspect-ratio:4/3;box-shadow:var(--shadow-m);isolation:isolate}
+.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s ease}
+.hero img.ready{opacity:1}
+.skel{position:absolute;inset:0;background:linear-gradient(100deg,var(--sunken) 30%,var(--line) 50%,var(--sunken) 70%);background-size:200% 100%;animation:sh 1.4s infinite linear}
+@keyframes sh{to{background-position:-200% 0}}
+.nophoto{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--mute);font-size:14px}
+.nophoto svg{width:44px;height:44px;opacity:.6}
+.hero.err .nophoto{display:flex}.hero.err .skel,.hero.err img{display:none}
+.hero-meta{position:absolute;left:14px;bottom:14px;display:flex;gap:6px;z-index:2}
+.tag{font:600 12px/1 var(--sans);letter-spacing:.02em;padding:7px 11px;border-radius:99px;background:rgba(255,255,255,.94);color:#1c1917;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.tag.dim{background:rgba(20,17,15,.72);color:#fff;box-shadow:none}
+
+/* ---------- progress ---------- */
+.status{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:22px 0 12px}
+.prog{flex:1;min-width:0}
+.prog-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:13px;color:var(--mute);font-weight:500}
+.prog-top strong{color:var(--ink);font:600 15px var(--sans)}
+.track{height:6px;border-radius:99px;background:var(--sunken);overflow:hidden}
+.track i{display:block;height:100%;width:0;background:var(--ok);border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.hearts{display:flex;gap:4px;padding-bottom:1px}
+.heart{width:22px;height:22px;transition:transform .2s}
+.heart path{fill:var(--brand);stroke:var(--brand);stroke-width:1.5;stroke-linejoin:round;transition:fill .25s}
+.heart.lost path{fill:none;stroke:var(--line)}
+.heart.pop{animation:pop .5s}
+@keyframes pop{35%{transform:scale(1.35) rotate(-10deg)}}
+
+/* ---------- answer slots ---------- */
+.slots{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:22px;min-height:32px}
+.slot{height:32px;min-width:34px;padding:0 12px;border-radius:99px;display:grid;place-items:center;font:600 13px var(--sans);color:transparent;border:1px dashed var(--line)}
+.slot.on{border:1px solid var(--ok);background:var(--okbg);color:var(--ok-d);animation:rise .35s}
+.slot.missed{border:1px solid var(--bad);background:var(--badbg);color:var(--bad)}
+@keyframes rise{from{transform:translateY(5px) scale(.94);opacity:0}}
+@media (prefers-color-scheme:dark){.slot.on{color:var(--ok)}}
+
+/* ---------- tiles ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:84px;padding:12px 6px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-s);
+  font:500 13.5px/1.2 var(--sans);text-align:center;color:var(--ink);transition:transform .12s,border-color .15s,box-shadow .15s,background .15s;animation:in .4s backwards}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+.tile:hover:not(:disabled){border-color:var(--brand);box-shadow:0 4px 14px -4px rgba(28,25,23,.18);transform:translateY(-1px)}
+.tile:active:not(:disabled){transform:scale(.97)}
+.ico{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:600 13px var(--serif);background:hsl(var(--h) 38% 91%);color:hsl(var(--h) 45% 30%)}
+@media (prefers-color-scheme:dark){.ico{background:hsl(var(--h) 22% 24%);color:hsl(var(--h) 55% 80%)}}
+.tile.ok{background:var(--ok);border-color:var(--ok);color:#fff;animation:bump .35s}
+.tile.ok .ico{background:rgba(255,255,255,.22);color:#fff}
+.tile.bad{background:var(--badbg);border-color:var(--bad);color:var(--bad);animation:shake .4s;box-shadow:none}
+.tile.bad .lbl{text-decoration:line-through;text-decoration-thickness:1px}
+.tile.bad .ico{opacity:.5}
+.tile.missed{background:transparent;border:1px dashed var(--ok);color:var(--ok);box-shadow:none}
+.tile:disabled{cursor:default}
+@keyframes bump{40%{transform:scale(1.07)}}
+@keyframes shake{20%{transform:translateX(-5px)}50%{transform:translateX(5px)}80%{transform:translateX(-2px)}}
+
+/* ---------- modal ---------- */
+.veil{position:fixed;inset:0;background:rgba(20,15,10,.5);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center;z-index:50;padding:0}
+.veil.show{display:flex;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.sheet{position:relative;width:100%;max-width:520px;max-height:92vh;overflow:auto;background:var(--surface);border-radius:24px 24px 0 0;padding:28px 24px calc(24px + env(safe-area-inset-bottom));box-shadow:var(--shadow-m);animation:up .35s cubic-bezier(.2,.9,.3,1)}
+@media(min-width:620px){.veil{align-items:center;padding:20px}.sheet{border-radius:24px}}
+@keyframes up{from{transform:translateY(24px);opacity:0}}
+.x{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--mute)}
+.x:hover{background:var(--sunken)}
+.sheet h2{font:600 28px/1.1 var(--serif);letter-spacing:-.02em;margin:0 0 6px;padding-right:30px}
+.sheet h3{font:600 11.5px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin:24px 0 10px}
+.sheet p{margin:0;color:var(--ink2)}
+.reveal{display:flex;gap:14px;align-items:center;margin:16px 0 0;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
+.reveal img{width:72px;height:72px;border-radius:10px;object-fit:cover;background:var(--sunken);flex:none}
+.reveal b{display:block;font:600 17px/1.25 var(--serif)}
+.reveal span{font-size:13px;color:var(--mute)}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{padding:6px 12px;border-radius:99px;font:600 12.5px var(--sans)}
+.pill.g{background:var(--okbg);color:var(--ok-d)}.pill.r{background:var(--badbg);color:var(--bad)}
+@media (prefers-color-scheme:dark){.pill.g{color:var(--ok)}}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.stat{padding:14px 4px;text-align:center;border-right:1px solid var(--line)}.stat:last-child{border:0}
+.stat b{display:block;font:600 24px/1.1 var(--serif)}
+.stat span{font:500 11px var(--sans);color:var(--mute);letter-spacing:.04em}
+.cta{display:flex;gap:10px;margin-top:24px}
+.btn{flex:1;height:48px;border-radius:12px;font:600 15px var(--sans);background:var(--brand);color:#fff;transition:background .15s,transform .1s}
+.btn:hover{background:var(--brand-d)}.btn:active{transform:scale(.98)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.ghost:hover{background:var(--sunken)}
+.next{text-align:center;margin-top:16px!important;font-size:13px;color:var(--mute)!important}
+.next b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+.src{display:block;text-align:center;margin-top:10px;font-size:13px;color:var(--mute);text-decoration:none}
+.src:hover{color:var(--brand)}
+.how ol{margin:14px 0 0;padding:0;list-style:none;counter-reset:s}
+.how li{counter-increment:s;position:relative;padding:0 0 14px 38px;color:var(--ink2)}
+.how li::before{content:counter(s);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--sunken);display:grid;place-items:center;font:600 12px var(--sans);color:var(--ink)}
+.how b{color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,24px);opacity:0;background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:99px;font:600 14px var(--sans);z-index:99;transition:.25s;pointer-events:none}
+.toast.show{transform:translate(-50%,0);opacity:1}
+.confetti{position:fixed;top:-14px;width:8px;height:12px;border-radius:2px;z-index:90;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translate(var(--dx),105vh) rotate(var(--rot))}}
+
+footer{border-top:1px solid var(--line);padding:22px 20px calc(26px + env(safe-area-inset-bottom));text-align:center;font-size:12.5px;color:var(--mute)}
+footer a{color:var(--ink2);text-decoration:underline;text-underline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="bar"><div class="bar-in">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--brand)"/><circle cx="16" cy="16" r="8" fill="none" stroke="#fff" stroke-width="2"/><circle cx="16" cy="16" r="3" fill="#fff"/></svg>
+    Ingredientdle
+  </div>
+  <div class="tools">
+    <button class="tool" id="bStats" aria-label="Statistics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg></button>
+    <button class="tool" id="bHelp" aria-label="How to play"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1 1-1.1 1.8M12 17h.01"/></svg></button>
+  </div>
+</div></header>
+
+<main>
+  <p class="kicker" id="kicker"></p>
+  <h1>What went into this dish?</h1>
+  <p class="lede" id="lede"></p>
+
+  <div class="hero" id="hero">
+    <div class="skel"></div>
+    <div class="nophoto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg><span>The photo couldn't be loaded</span></div>
+    <img id="img" alt="Photo of today's mystery dish" referrerpolicy="no-referrer" fetchpriority="high">
+    <div class="hero-meta"><span class="tag" id="cuisine"></span><span class="tag dim" id="nIng"></span></div>
+  </div>
+
+  <div class="status">
+    <div class="prog">
+      <div class="prog-top"><strong id="progTxt"></strong><span id="progSub"></span></div>
+      <div class="track"><i id="fill"></i></div>
+    </div>
+    <div class="hearts" id="hearts" role="img"></div>
+  </div>
+
+  <div class="slots" id="slots" aria-live="polite"></div>
+  <div class="grid" id="grid" role="group" aria-label="Ingredient choices"></div>
+</main>
+
+<footer>
+  Photos and recipe data via <a href="https://www.themealdb.com" target="_blank" rel="noopener">TheMealDB</a> and linked recipe sources.<br>
+  A new dish every day.
+</footer>
+
+<div class="veil" id="vResult"><div class="sheet" id="sResult" role="dialog" aria-modal="true"></div></div>
+<div class="veil" id="vHelp"><div class="sheet how" role="dialog" aria-modal="true">
+  <button class="x" data-close aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <h2>How to play</h2>
+  <p>Every day there's a new dish. Work out what went into it.</p>
+  <ol style="margin-top:20px">
+    <li><b>Look at the photo.</b> The cuisine and the number of ingredients are your clues.</li>
+    <li><b>Tap an ingredient to guess it.</b> Correct guesses fill in. Wrong guesses cost a heart.</li>
+    <li><b>Hearts are limited.</b> You get one heart for every 3 ingredients in the dish, rounded down.</li>
+    <li><b>Beware the decoys.</b> The grid holds two and a half times as many options as there are real ingredients.</li>
+    <li>Salt, pepper and water never count.</li>
+  </ol>
+  <div class="cta"><button class="btn" data-close>Start cooking</button></div>
+</div></div>
+<div class="veil" id="vStats"><div class="sheet" id="sStats" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/*DISHES_START*/
+const DISHES = [{"name": "Spicy Arrabiata Penne", "cuisine": "Italian", "image": "images/spicy-arrabiata-penne.jpg", "source": "https://www.themealdb.com/meal/52771", "ingredients": ["penne", "olive oil", "garlic", "tomatoes", "chili flakes", "italian seasoning", "basil", "parmesan"]}, {"name": "Chicken Alfredo Primavera", "cuisine": "Italian", "image": "images/chicken-alfredo-primavera.jpg", "source": "https://www.themealdb.com/meal/52796", "ingredients": ["butter", "olive oil", "chicken", "squash", "broccoli", "mushrooms", "onion", "garlic", "chili flakes", "white wine", "milk", "heavy cream", "parmesan", "pasta", "parsley"]}, {"name": "Pad Thai", "cuisine": "Thai", "image": "images/pad-thai.jpg", "source": "https://www.bbcgoodfood.com/recipes/easy-pad-thai", "ingredients": ["rice noodles", "lime", "cayenne", "sugar", "fish sauce", "vegetable oil", "prawns", "spring onions", "bean sprouts", "peanuts", "cilantro", "sweet chili sauce"]}, {"name": "Beef Wellington", "cuisine": "British", "image": "images/beef-wellington.jpg", "source": "https://www.themealdb.com/meal/52803", "ingredients": ["mushrooms", "mustard", "olive oil", "beef fillet", "prosciutto", "puff pastry", "flour", "egg yolks"]}, {"name": "Chicken Handi", "cuisine": "Indian", "image": "images/chicken-handi.jpg", "source": "https://www.themealdb.com/meal/52795", "ingredients": ["chicken", "onion", "tomatoes", "garlic", "ginger", "vegetable oil", "cumin", "coriander seeds", "turmeric", "chili powder", "green chili", "yogurt", "cream", "fenugreek", "garam masala"]}, {"name": "Kung Pao Chicken", "cuisine": "Chinese", "image": "images/kung-pao-chicken.jpg", "source": "http://allrecipes.co.uk/recipe/1773/kung-pao-chicken.aspx", "ingredients": ["sake", "soy sauce", "sesame oil", "cornstarch", "chicken", "chili powder", "rice vinegar", "brown sugar", "spring onions", "garlic", "water chestnuts", "peanuts"]}, {"name": "Shakshuka", "cuisine": "Egyptian", "image": "images/shakshuka.jpg", "source": "https://www.bbcgoodfood.com/recipes/7573/spicy-tomato-baked-eggs", "ingredients": ["olive oil", "red onion", "red chili", "garlic", "cilantro", "tomatoes", "sugar", "eggs", "feta"]}, {"name": "Piri-piri chicken and slaw", "cuisine": "Portuguese", "image": "images/piri-piri-chicken-and-slaw.jpg", "source": "https://www.olivemagazine.com/recipes/family/piri-piri-chicken-and-winter-slaw/", "ingredients": ["chicken", "red chili", "garlic", "ginger", "oregano", "cilantro", "paprika", "red wine vinegar", "oil", "red onion", "carrots", "beetroot", "cabbage", "mayonnaise", "yogurt", "cumin"]}, {"name": "French Onion Soup", "cuisine": "France", "image": "images/french-onion-soup.jpg", "source": "https://www.bbcgoodfood.com/recipes/3020694/french-onion-soup", "ingredients": ["butter", "olive oil", "onion", "sugar", "garlic", "flour", "dry white wine", "beef stock", "bread", "gruy re"]}, {"name": "Baked Yuca Fries", "cuisine": "", "image": "images/baked-yuca-fries.jpg", "source": "https://www.delish.com/cooking/recipe-ideas/a36702083/yuca-fries-recipe/", "ingredients": ["yuca", "olive oil", "chili powder", "avocado", "sour cream", "lime", "cilantro"]}, {"name": "Corned Beef and Cabbage – Jamaican Style", "cuisine": "Jamaican", "image": "images/corned-beef-and-cabbage-jamaican-style.jpg", "source": "https://www.myforkinglife.com/corned-beef-and-cabbage-jamaican-style/#recipe", "ingredients": ["olive oil", "cabbage", "green pepper", "onion", "garlic", "corned beef", "tomatoes", "thyme", "tomato ketchup"]}, {"name": "Ratatouille", "cuisine": "France", "image": "images/ratatouille.jpg", "source": "https://www.bbcgoodfood.com/recipes/2903/ratatouille", "ingredients": ["aubergine", "courgettes", "yellow pepper", "tomatoes", "olive oil", "basil", "onion", "garlic", "red wine vinegar", "sugar"]}, {"name": "Croatian Bean Stew", "cuisine": "Croatian", "image": "images/croatian-bean-stew.jpg", "source": "https://www.visit-croatia.co.uk/croatian-cuisine/croatian-recipes/", "ingredients": ["cannellini beans", "vegetable oil", "tomatoes", "challots", "garlic", "parsley", "chorizo"]}, {"name": "Clam, chorizo & white bean stew", "cuisine": "Spanish", "image": "images/clam-chorizo-white-bean-stew.jpg", "source": "https://www.bbcgoodfood.com/recipes/clam-chorizo-white-bean-stew", "ingredients": ["chorizo", "onion", "garlic", "parsley", "vegetable stock", "tinned tomatos", "butter beans", "sherry vinegar", "clams", "crusty bread"]}, {"name": "Hot cumin lamb wrap with crunchy slaw & spicy mayo", "cuisine": "Turkish", "image": "images/hot-cumin-lamb-wrap-with-crunchy-slaw-spicy-mayo.jpg", "source": "https://www.bbcgoodfood.com/recipes/hot-cumin-lamb-wrap-crunchy-slaw-spicy-mayo", "ingredients": ["lamb leg", "olive oil", "cumin", "sugar", "white wine vinegar", "carrots", "spring onions", "white cabbage", "sweet peppadew peppers", "mayonnaise", "pita bread"]}, {"name": "Cacik", "cuisine": "Turkish", "image": "images/cacik.jpg", "source": "https://www.bbcgoodfood.com/recipes/cacik", "ingredients": ["natural yoghurt", "lemon juice", "olive oil", "mint", "cucumber", "garlic"]}, {"name": "Japanese gohan rice", "cuisine": "Japanese", "image": "images/japanese-gohan-rice.jpg", "source": "https://www.bbcgoodfood.com/recipes/japanese-rice-gohan", "ingredients": ["sushi rice", "mirin", "pickle juice", "spring onions"]}, {"name": "Corned Beef and Cabbage", "cuisine": "Irish", "image": "images/corned-beef-and-cabbage.jpg", "source": "https://www.themealdb.com/meal/52998", "ingredients": ["beef brisket", "potatoes", "carrots", "cabbage"]}, {"name": "English Breakfast", "cuisine": "British", "image": "images/english-breakfast.jpg", "source": "https://www.bbc.co.uk/food/recipes/stressfreefullenglis_67721", "ingredients": ["sausages", "bacon", "mushrooms", "tomatoes", "black pudding", "eggs", "bread"]}, {"name": "Mediterranean Pasta Salad", "cuisine": "Italian", "image": "images/mediterranean-pasta-salad.jpg", "source": "https://thelemonsqueezy.com/recipe/mediterranean-pasta-salad/", "ingredients": ["mozzarella balls", "baby plum tomatoes", "basil", "farfalle", "olive oil", "green olives", "tuna"]}, {"name": "Fårikål (Norwegian National Dish)", "cuisine": "Norway", "image": "images/farikal-norwegian-national-dish.jpg", "source": "https://scandinaviancookbook.com/farikal-national-dish-of-norway/", "ingredients": ["lamb", "white cabbage", "black peppercorns", "flour"]}, {"name": "Chicken Quinoa Greek Salad", "cuisine": "Greek", "image": "images/chicken-quinoa-greek-salad.jpg", "source": "https://www.bbcgoodfood.com/recipes/griddled-chicken-quinoa-greek-salad", "ingredients": ["quinoa", "butter", "red chili", "garlic", "chicken", "olive oil", "black olives", "red onion", "feta", "mint", "lemon"]}, {"name": "Torta de fiambre", "cuisine": "Uruguayan", "image": "images/torta-de-fiambre.jpg", "source": "https://jennyisbaking.com/2020/12/30/klassische-torta-de-fiambre-aus-uruguay/#recipe", "ingredients": ["cheddar cheese", "ham", "eggs", "vegetable oil", "milk", "flour", "baking powder", "oregano"]}, {"name": "Ají de Aguacate Recipe (Colombian Spicy Avocado Sauce)", "cuisine": "", "image": "images/aji-de-aguacate-recipe-colombian-spicy-avocado-s.jpg", "source": "https://www.mycolombianrecipes.com/aji-de-aguacate-colombian-hot-avocado-sauce/#recipe", "ingredients": ["avocado", "habanero pepper", "eggs", "lime", "vinegar", "onion", "spring onions", "cilantro"]}, {"name": "Chuletas de Cerdo a la Criolla (Pork Chops in Creole Sauce)", "cuisine": "", "image": "images/chuletas-de-cerdo-a-la-criolla-pork-chops-in-cre.jpg", "source": "https://www.mycolombianrecipes.com/chuletas-de-cerdo-a-la-criolla-pork-chops-in-creole-sauce/#recipe", "ingredients": ["pork chops", "vegetable oil", "garlic", "mustard", "cumin", "tomatoes", "onion", "cilantro"]}, {"name": "Lemongrass beef stew with noodles", "cuisine": "Thai", "image": "images/lemongrass-beef-stew-with-noodles.jpg", "source": "https://www.bbcgoodfood.com/recipes/lemongrass-beef-stew-noodles", "ingredients": ["ginger", "garlic", "lemongrass stalks", "cilantro", "red chili", "vegetable oil", "beef", "soy sauce", "five spice powder", "brown sugar", "beef stock", "rice noodles", "lime"]}, {"name": "Hveder - Danish Wheat Buns", "cuisine": "", "image": "images/hveder-danish-wheat-buns.jpg", "source": "https://denmark.dk/people-and-culture/recipes/danish-wheat-buns/", "ingredients": ["milk", "yeast", "eggs", "sugar", "coarse salt", "cardomom", "flour", "butter"]}, {"name": "Brazilian carrot cake", "cuisine": "", "image": "images/brazilian-carrot-cake.jpg", "source": "https://www.bbcgoodfood.com/recipes/brazilian-carrot-cake", "ingredients": ["vegetable oil", "flour", "sugar", "baking powder", "carrots", "eggs", "milk", "cocoa powder"]}, {"name": "Chilli prawn linguine", "cuisine": "Italian", "image": "images/chilli-prawn-linguine.jpg", "source": "https://www.bbcgoodfood.com/recipes/1269/chilli-prawn-linguine", "ingredients": ["linguine pasta", "sugar snap peas", "olive oil", "garlic", "red chili", "king prawns", "tomatoes", "basil leaves", "lettuce", "bread", "fromage frais", "lime", "sugar"]}, {"name": "Fruit and Cream Cheese Breakfast Pastries", "cuisine": "United States", "image": "images/fruit-and-cream-cheese-breakfast-pastries.jpg", "source": "https://www.themealdb.com/meal/52957", "ingredients": ["cream cheese", "sugar", "vanilla extract", "flour", "puff pastry", "strawberries", "raspberries", "blackberries"]}, {"name": "Squash linguine", "cuisine": "Italian", "image": "images/squash-linguine.jpg", "source": "https://www.bbcgoodfood.com/recipes/creamy-squash-linguine", "ingredients": ["butternut squash", "garlic", "olive oil", "linguine pasta", "sage"]}, {"name": "Beef Caldereta", "cuisine": "Filipino", "image": "images/beef-caldereta.jpg", "source": "https://www.kawalingpinoy.com/beef-caldereta/", "ingredients": ["beef", "beef stock", "soy sauce", "green pepper", "red pepper", "potatoes", "carrots", "tomato puree", "peanut butter", "chili powder", "onion", "garlic", "olive oil"]}, {"name": "Mango chow", "cuisine": "", "image": "images/mango-chow.jpg", "source": "https://www.theguardian.com/food/2020/jul/04/andi-oliver-antiguan-feast-recipes-slow-cooked-pork-belly-corn-chilli-lime-mango-chow-spiced-bread-butter-pudding", "ingredients": ["mango", "spring onions", "scotch bonnet", "cilantro", "lime"]}, {"name": "Spotted Dick", "cuisine": "British", "image": "images/spotted-dick.jpg", "source": "https://www.bbcgoodfood.com/recipes/2686661/spotted-dick", "ingredients": ["self raising flour", "suet", "currants", "sugar", "lemon", "orange", "milk", "custard"]}, {"name": "Burek", "cuisine": "Croatian", "image": "images/burek.jpg", "source": "https://www.visit-croatia.co.uk/croatian-cuisine/croatian-recipes/", "ingredients": ["filo pastry", "beef", "onion", "oil"]}, {"name": "Empanadas", "cuisine": "Argentina", "image": "images/empanadas.jpg", "source": "https://www.munchery.com/blog/the-ten-iconic-dishes-of-argentina-and-how-to-cook-them-at-home/", "ingredients": ["flour", "butter", "beef", "onion", "eggs", "green olives", "cumin", "paprika"]}, {"name": "Cheese Borek", "cuisine": "Algerian", "image": "images/cheese-borek.jpg", "source": "https://www.allrecipes.com/recipe/26728/cheese-borek/", "ingredients": ["eggs", "parsley", "garlic", "red pepper", "gouda cheese", "emmentaler cheese", "phyllo dough", "butter"]}, {"name": "Callaloo Jamaican Style", "cuisine": "Jamaican", "image": "images/callaloo-jamaican-style.jpg", "source": "https://www.africanbites.com/callaloo-jamaican-style/", "ingredients": ["kale", "bacon", "garlic", "onion", "paprika", "thyme", "tomatoes", "red pepper", "banana", "vegetable oil"]}, {"name": "Pan-fried hake, white bean & chorizo broth", "cuisine": "Spanish", "image": "images/pan-fried-hake-white-bean-chorizo-broth.jpg", "source": "https://www.bbcgoodfood.com/recipes/pan-fried-hake-white-bean-chorizo-broth", "ingredients": ["white beans", "garlic", "bay leaves", "thyme", "olive oil", "bread", "chorizo", "onion", "paprika", "chicken stock", "parsley", "hake"]}, {"name": "Camaro Grelhado Com Molho Cru (Grilled Prawns with Green Onion Sauce)", "cuisine": "", "image": "images/camaro-grelhado-com-molho-cru-grilled-prawns-wit.jpg", "source": "https://www.196flavors.com/wprm_print/camarao-grelhado-com-molho-cru", "ingredients": ["prawns", "garlic", "spring onions", "cumin", "white vinegar"]}, {"name": "Brie wrapped in prosciutto & brioche", "cuisine": "France", "image": "images/brie-wrapped-in-prosciutto-brioche.jpg", "source": "https://www.bbcgoodfood.com/recipes/1803634/brie-wrapped-in-prosciutto-and-brioche", "ingredients": ["flour", "sugar", "yeast", "milk", "eggs", "butter", "brie", "prosciutto"]}, {"name": "15-minute chicken & halloumi burgers", "cuisine": "United States", "image": "images/15-minute-chicken-halloumi-burgers.jpg", "source": "https://www.bbcgoodfood.com/recipes/15-minute-chicken-halloumi-burgers", "ingredients": ["chicken", "oil", "hotsauce", "lemon juice", "buns", "cheese", "cabbage", "mayonnaise", "sour cream", "lettuce", "red pepper"]}, {"name": "Lakror me Kungull Summer Squash Pie", "cuisine": "", "image": "images/lakror-me-kungull-summer-squash-pie.jpg", "source": "https://www.myalbanianfood.com/recipe/summer-squash-pie/", "ingredients": ["squash", "eggs", "flour", "baking powder", "olive oil"]}, {"name": "Classic Tourtière", "cuisine": "Canadian", "image": "images/classic-tourtiere.jpg", "source": "https://canadianfoodfocus.org/recipes/classic-canadian-dish-classic-tourtiere/", "ingredients": ["canola oil", "onion", "garlic", "beef", "pork", "leaves of summer savoury", "nutmeg", "bay leaf", "beef stock", "russet potato", "shortcrust pastry", "eggs"]}, {"name": "Amok Trey – Cambodian Fish Curry", "cuisine": "", "image": "images/amok-trey-cambodian-fish-curry.jpg", "source": "https://recipes-for-life.com/cambodian-recipes/", "ingredients": ["fish fillet", "coconut milk", "red curry paste", "fish sauce", "brown sugar", "chicken stock", "eggs", "kaffir lime leaves", "vegetable oil", "banana leaves", "cilantro", "lime"]}, {"name": "Baingan Bharta", "cuisine": "India", "image": "images/baingan-bharta.jpg", "source": "http://www.vegrecipesofindia.com/baingan-bharta-recipe-punjabi-baingan-bharta-recipe/", "ingredients": ["aubergine", "onion", "tomatoes", "garlic", "green chili", "red chilli powder", "oil", "cilantro"]}, {"name": "Beef and Oyster pie", "cuisine": "British", "image": "images/beef-and-oyster-pie.jpg", "source": "https://www.bbc.co.uk/food/recipes/beef_and_oyster_pie_65230", "ingredients": ["beef", "olive oil", "shallots", "garlic", "bacon", "thyme", "bay leaf", "stout", "beef stock", "cornstarch", "oysters", "flour", "butter", "eggs"]}, {"name": "Brazilian cheese bread (pão de queijo)", "cuisine": "", "image": "images/brazilian-cheese-bread-pao-de-queijo.jpg", "source": "https://www.bbcgoodfood.com/recipes/brazilian-cheese-bread-pao-de-queijo", "ingredients": ["oil", "milk", "butter", "tapioca", "eggs", "parmesan"]}, {"name": "Duck Confit", "cuisine": "France", "image": "images/duck-confit.jpg", "source": "https://www.bbcgoodfood.com/recipes/2085/barneys-confit-of-duck", "ingredients": ["bay leaf", "garlic", "thyme", "duck legs", "white wine"]}, {"name": "Drunken noodles (pad kee mao)", "cuisine": "Thai", "image": "images/drunken-noodles-pad-kee-mao.jpg", "source": "https://www.bbcgoodfood.com/recipes/drunken-noodles-pad-kee-mao", "ingredients": ["flat rice noodles", "vegetable oil", "garlic", "birds eye chillies", "sirloin steak", "broccoli", "basil leaves", "soy sauce", "oyster sauce", "fish sauce", "sugar"]}, {"name": "Breadfruit Tacos", "cuisine": "", "image": "images/breadfruit-tacos.jpg", "source": "https://dominicagourmet.com/breadfruit-tacos-recipe/", "ingredients": ["breadfruit", "codfish bulljaw", "lettuce", "oil"]}, {"name": "Syrian Bread", "cuisine": "Syrian", "image": "images/syrian-bread.jpg", "source": "https://www.allrecipes.com/recipe/20834/syrian-bread/", "ingredients": ["vegetable oil", "sugar", "flour", "yeast"]}, {"name": "Laksa King Prawn Noodles", "cuisine": "Malaysian", "image": "images/laksa-king-prawn-noodles.jpg", "source": "https://www.bbcgoodfood.com/recipes/prawn-laksa-curry-bowl", "ingredients": ["olive oil", "red chili", "thai red curry paste", "vegetable stock cube", "coconut milk", "fish sauce", "rice noodles", "lime", "king prawns", "cilantro"]}, {"name": "Leche Asada", "cuisine": "", "image": "images/leche-asada.jpg", "source": "https://www.allrecipes.com/recipe/134327/leche-asada/", "ingredients": ["milk", "lemon", "cinnamon stick", "eggs", "sugar"]}, {"name": "Jamaican Cornmeal Porridge", "cuisine": "Jamaican", "image": "images/jamaican-cornmeal-porridge.jpg", "source": "https://www.myforkinglife.com/jamaican-cornmeal-porridge/#recipe", "ingredients": ["coconut milk", "fine yellow cornmeal", "vanilla extract", "cinnamon", "nutmeg", "allspice", "sweetened condensed milk"]}, {"name": "Bryndzové Halušky", "cuisine": "Slovakia", "image": "images/bryndzove-halusky.jpg", "source": "https://www.slovakia-foods.co.uk/blog/post/bryndzove-halusky-recipe-a-taste-of-slovakia-national-dish.html", "ingredients": ["potatoes", "flour", "eggs", "bryndza cheese", "bacon", "chives"]}, {"name": "Beef Brisket Pot Roast", "cuisine": "United States", "image": "images/beef-brisket-pot-roast.jpg", "source": "http://www.simplyrecipes.com/recipes/beef_brisket_pot_roast/", "ingredients": ["beef brisket", "onion", "garlic", "thyme", "rosemary", "bay leaves", "beef stock", "carrots", "mustard", "potatoes"]}, {"name": "Authentic Norwegian Kransekake", "cuisine": "Norway", "image": "images/authentic-norwegian-kransekake.jpg", "source": "https://scandinaviancookbook.com/classic-norwegian-kransekake-recipe/", "ingredients": ["almonds", "egg white", "powdered sugar", "lemon juice"]}, {"name": "Salmon noodle wraps", "cuisine": "Vietnamese", "image": "images/salmon-noodle-wraps.jpg", "source": "https://www.bbcgoodfood.com/recipes/salmon-noodle-wraps", "ingredients": ["rice noodles", "spring onions", "petit pois", "chili", "cilantro", "lime", "salmon"]}, {"name": "Kapsalon", "cuisine": "Netherlands", "image": "images/kapsalon.jpg", "source": "https://www.themealdb.com/meal/52769", "ingredients": ["fries", "doner meat", "garlic sauce", "hotsauce", "lettuce", "tomatoes", "cucumber", "gouda cheese"]}, {"name": "Rosol (Polish Chicken Soup)", "cuisine": "Polish", "image": "images/rosol-polish-chicken-soup.jpg", "source": "https://polishhousewife.com/rosol-polish-chicken-soup/", "ingredients": ["chicken legs", "onion", "carrots", "leek", "celery", "cabbage", "allspice", "bay leaf", "parsley", "dill"]}, {"name": "Paszteciki (Polish Pasties)", "cuisine": "Polish", "image": "images/paszteciki-polish-pasties.jpg", "source": "https://www.food.com/recipe/paszteciki-polish-pasties-117909", "ingredients": ["flour", "eggs", "butter", "onion", "swede", "beef brisket"]}, {"name": "Roast fennel and aubergine paella", "cuisine": "Spanish", "image": "images/roast-fennel-and-aubergine-paella.jpg", "source": "https://www.homestylemag.co.uk/recipe/517/main-courses/roast-fennel-and-aubergine-paella", "ingredients": ["baby aubergine", "fennel", "red pepper", "courgettes", "onion", "paella rice", "paprika", "saffron", "white wine", "vegetable stock", "frozen peas", "lemon", "parsley"]}, {"name": "Salt cod tortilla", "cuisine": "Spanish", "image": "images/salt-cod-tortilla.jpg", "source": "https://www.bbcgoodfood.com/recipes/salt-cod-tortilla", "ingredients": ["olive oil", "onion", "jersey royal potatoes", "garlic", "eggs", "parsley", "salt cod"]}, {"name": "Nanaimo Bars", "cuisine": "Canadian", "image": "images/nanaimo-bars.jpg", "source": "https://www.bbcgoodfood.com/recipes/nanaimo-bars", "ingredients": ["custard", "sugar", "cocoa", "eggs", "digestive biscuits", "desiccated coconut", "almonds", "butter", "heavy cream", "custard powder", "icing sugar", "dark chocolate"]}, {"name": "Chickpea Fajitas", "cuisine": "Mexican", "image": "images/chickpea-fajitas.jpg", "source": "https://www.bbcgoodfood.com/recipes/chickpea-fajitas", "ingredients": ["chickpeas", "olive oil", "paprika", "tomatoes", "red onion", "red wine vinegar", "avocado", "lime", "sour cream", "harissa spice", "corn tortillas", "cilantro"]}, {"name": "Kumpir", "cuisine": "Turkish", "image": "images/kumpir.jpg", "source": "http://www.turkeysforlife.com/2013/10/firinda-kumpir-turkish-street-food.html", "ingredients": ["potatoes", "butter", "cheese", "onion", "red pepper", "red chilli flakes"]}, {"name": "Oxtail with broad beans", "cuisine": "Jamaican", "image": "images/oxtail-with-broad-beans.jpg", "source": "http://allrecipes.co.uk/recipe/5392/jamaican-oxtail-with-broad-beans.aspx", "ingredients": ["oxtail", "onion", "spring onions", "garlic", "ginger", "scotch bonnet", "soy sauce", "thyme", "vegetable oil", "broad beans", "cornstarch"]}, {"name": "Apple Frangipan Tart", "cuisine": "British", "image": "images/apple-frangipan-tart.jpg", "source": "https://www.themealdb.com/meal/52768", "ingredients": ["digestive biscuits", "butter", "bramley apples", "salted butter", "sugar", "free range eggs", "almonds", "almond extract", "flaked almonds"]}, {"name": "Mazariner – Scandinavian Almond Tartlets", "cuisine": "Norway", "image": "images/mazariner-scandinavian-almond-tartlets.jpg", "source": "https://scandinaviancookbook.com/mazariner-scandinavian-almond-tartlets/", "ingredients": ["flour", "powdered sugar", "butter", "eggs", "vanilla extract", "almond flour", "almond extract", "heavy cream"]}, {"name": "Khmer Banh Xeo – Cambodian Savory Pancake", "cuisine": "", "image": "images/khmer-banh-xeo-cambodian-savory-pancake.jpg", "source": "https://recipes-for-life.com/cambodian-recipes/", "ingredients": ["rice flour", "cornstarch", "coconut milk", "turmeric", "pork belly slices", "bean sprouts", "onion", "vegetable oil", "fish sauce"]}, {"name": "Egg Foo Young", "cuisine": "Chinese", "image": "images/egg-foo-young.jpg", "source": "https://www.simplyrecipes.com/egg-foo-young-recipe-6890222", "ingredients": ["unsalted beef stock", "soy sauce", "shaoxing wine", "oyster sauce", "cornstarch", "eggs", "sugar", "spring onions", "mung bean sprouts", "prawns", "vegetable oil", "jasmine rice"]}, {"name": "Creamy mango smoothie", "cuisine": "", "image": "images/creamy-mango-smoothie.jpg", "source": "https://dominicagourmet.com/creamy-mango-smoothie-recipe/", "ingredients": ["mango", "vanilla extract", "condensed milk", "ice cubes"]}, {"name": "Cajun spiced fish tacos", "cuisine": "Mexican", "image": "images/cajun-spiced-fish-tacos.jpg", "source": "https://realfood.tesco.com/recipes/cajun-spiced-fish-tacos.html", "ingredients": ["cajun", "cayenne pepper", "white fish", "vegetable oil", "flour tortilla", "avocado", "little gem lettuce", "spring onions", "salsa", "sour cream", "lemon", "garlic"]}, {"name": "Lamb and Potato pie", "cuisine": "British", "image": "images/lamb-and-potato-pie.jpg", "source": "https://www.bbc.co.uk/food/recipes/lambandpotatopie_83913", "ingredients": ["lamb shoulder", "flour", "vegetable oil", "onion", "carrots", "vegetable stock", "potatoes", "shortcrust pastry", "eggs"]}, {"name": "Seafood rice", "cuisine": "Spanish", "image": "images/seafood-rice.jpg", "source": "https://www.bbcgoodfood.com/recipes/easiest-ever-paella", "ingredients": ["olive oil", "leek", "chorizo", "turmeric", "rice", "fish stock", "peas", "frozen seafood mix"]}, {"name": "Vietnamese-style caramel pork", "cuisine": "Vietnamese", "image": "images/vietnamese-style-caramel-pork.jpg", "source": "https://www.bbcgoodfood.com/recipes/vietnamese-style-caramel-pork", "ingredients": ["nut oil", "pork shoulder steaks", "shallots", "ginger", "red chili", "brown sugar", "fish sauce", "chilli sauce", "spring onions", "rice", "pak choi"]}, {"name": "Roti john", "cuisine": "Malaysian", "image": "images/roti-john.jpg", "source": "https://www.196flavors.com/malaysia-roti-john/", "ingredients": ["beef", "onion", "eggs", "chili", "baguette", "mayonnaise"]}, {"name": "Smoky tomato pepper salsa", "cuisine": "", "image": "images/smoky-tomato-pepper-salsa.jpg", "source": "https://www.bbcgoodfood.com/recipes/smoky-tomato-pepper-salsa", "ingredients": ["red onion", "cilantro", "tomatoes", "red pepper", "olive oil", "red wine vinegar", "paprika", "sugar"]}, {"name": "Chocolate Caramel Crispy", "cuisine": "British", "image": "images/chocolate-caramel-crispy.jpg", "source": "http://www.donalskehan.com/recipes/chocolate-caramel-rice-crispy-treats/", "ingredients": ["mars bar", "butter", "rice krispies", "milk chocolate"]}, {"name": "Slow-roast lamb with cinnamon, fennel & citrus", "cuisine": "Turkish", "image": "images/slow-roast-lamb-with-cinnamon-fennel-citrus.jpg", "source": "https://www.bbcgoodfood.com/recipes/slow-roast-lamb-cinnamon-fennel-citrus", "ingredients": ["lamb leg", "lemon", "olive oil", "clear honey", "cinnamon", "fennel seeds", "cumin", "garlic"]}, {"name": "Leg of Lamb Armenian-Style", "cuisine": "", "image": "images/leg-of-lamb-armenian-style.jpg", "source": "https://www.armenianmuseum.org/armenian-recipes/leg-of-lamb-armenian-style", "ingredients": ["lamb leg", "garlic", "parsley", "onion", "balsamic vinegar", "olive oil", "mint"]}, {"name": "Kadu Borani", "cuisine": "", "image": "images/kadu-borani.jpg", "source": "https://www.afghanaid.org.uk/kadu-borani-recipe", "ingredients": ["squash", "onion", "green chili", "oil", "turmeric", "garlic", "sugar", "yogurt"]}, {"name": "Salmon Avocado Salad", "cuisine": "British", "image": "images/salmon-avocado-salad.jpg", "source": "https://www.bbcgoodfood.com/recipes/4521/salmon-avocado-and-cucumber-salad", "ingredients": ["salmon", "avocado", "cucumber", "spinach", "mint", "lime", "honey", "olive oil"]}, {"name": "Parkin Cake", "cuisine": "British", "image": "images/parkin-cake.jpg", "source": "https://www.bbcgoodfood.com/recipes/1940684/parkin", "ingredients": ["butter", "eggs", "milk", "golden syrup", "black treacle", "brown sugar", "oatmeal", "self raising flour", "ginger"]}, {"name": "Turkish-style lamb", "cuisine": "Turkish", "image": "images/turkish-style-lamb.jpg", "source": "https://www.bbcgoodfood.com/recipes/turkish-style-lamb", "ingredients": ["lamb leg", "seasoning", "oregano", "mint", "yogurt", "pita bread", "iceberg lettuce", "red onion", "lemon"]}, {"name": "Split Pea Soup", "cuisine": "Canadian", "image": "images/split-pea-soup.jpg", "source": "https://www.bbcgoodfood.com/recipes/1022639/split-pea-and-green-pea-smoked-ham-soup", "ingredients": ["ham", "peas", "onion", "carrots", "bay leaves", "celery", "frozen peas", "bread"]}, {"name": "Vegetarian Casserole", "cuisine": "British", "image": "images/vegetarian-casserole.jpg", "source": "https://www.bbcgoodfood.com/recipes/1993645/vegetarian-casserole", "ingredients": ["rapeseed oil", "onion", "garlic", "paprika", "cumin", "thyme", "carrots", "celery", "red pepper", "yellow pepper", "tomatoes", "vegetable stock cube", "courgettes", "lentils"]}, {"name": "Potato Salad (Olivier Salad)", "cuisine": "Russian", "image": "images/potato-salad-olivier-salad.jpg", "source": "https://www.sweetandsavorybyshinee.com/russian-potato-salad/", "ingredients": ["potatoes", "carrots", "white wine vinegar", "eggs", "sausages", "dill", "peas", "onion", "mayonnaise"]}, {"name": "Potato Gratin with Chicken", "cuisine": "Italian", "image": "images/potato-gratin-with-chicken.jpg", "source": "https://www.instagram.com/p/BHxR7hYBJ6P", "ingredients": ["potatoes", "onion", "olive oil", "chicken stock", "creme fraiche", "parmesan", "chicken", "bacon", "spinach", "peas"]}, {"name": "Spicy Thai prawn noodles", "cuisine": "Thai", "image": "images/spicy-thai-prawn-noodles.jpg", "source": "https://www.bbcgoodfood.com/recipes/spicy-thai-prawn-noodles", "ingredients": ["rice noodles", "sesame oil", "eggs", "red chili", "ginger", "prawns", "soy sauce", "cilantro", "mint", "lime", "peanuts"]}, {"name": "Crispy Sausages and Greens", "cuisine": "Irish", "image": "images/crispy-sausages-and-greens.jpg", "source": "https://www.bonappetit.com/columns/cooking-without-recipes/article/kale-cabbage-sausage-weeknight-dinner", "ingredients": ["kale", "italian fennel sausages", "cabbage", "garlic", "onion", "shiitake mushrooms", "chicken stock"]}, {"name": "Summer Pistou", "cuisine": "France", "image": "images/summer-pistou.jpg", "source": "https://www.bbcgoodfood.com/recipes/summer-pistou", "ingredients": ["rapeseed oil", "leek", "courgettes", "vegetable stock", "cannellini beans", "green beans", "tomatoes", "garlic", "basil", "parmesan"]}, {"name": "Kulaç Soda Bread", "cuisine": "", "image": "images/kulac-soda-bread.jpg", "source": "https://www.myalbanianfood.com/recipe/albanian-kulac-albanian-soda-bread/", "ingredients": ["flour", "yogurt", "baking powder", "olive oil"]}, {"name": "Fiskesuppe (Creamy Norwegian Fish Soup)", "cuisine": "Norway", "image": "images/fiskesuppe-creamy-norwegian-fish-soup.jpg", "source": "https://scandinaviancookbook.com/fiskesuppe-creamy-norwegian-fish-soup/", "ingredients": ["fish fillet", "garlic", "potatoes", "carrots", "leek", "butter", "flour", "fish stock", "milk", "creme fraiche", "prawns", "chives"]}, {"name": "Hummus", "cuisine": "Turkish", "image": "images/hummus.jpg", "source": "https://www.bbcgoodfood.com/recipes/easy-hummus-recipe", "ingredients": ["chickpeas", "tahini paste", "garlic", "yogurt", "lemon"]}, {"name": "Slow-roasted ham with lemon, garlic & sage", "cuisine": "Polish", "image": "images/slow-roasted-ham-with-lemon-garlic-sage.jpg", "source": "https://www.bbcgoodfood.com/recipes/slow-roasted-ham-with-lemon-garlic-sage", "ingredients": ["garlic", "lemon", "vegetable oil", "pork shoulder", "dry white wine"]}, {"name": "Breakfast Potatoes", "cuisine": "Canadian", "image": "images/breakfast-potatoes.jpg", "source": "http://www.vodkaandbiscuits.com/2014/03/06/bangin-breakfast-potatoes/", "ingredients": ["potatoes", "olive oil", "bacon", "garlic", "maple syrup", "parsley", "allspice"]}, {"name": "Grape Nut Ice Cream", "cuisine": "Jamaican", "image": "images/grape-nut-ice-cream.jpg", "source": "https://www.myforkinglife.com/grape-nut-ice-cream-recipe/#recipe", "ingredients": ["heavy cream", "condensed milk", "vanilla extract", "grape nut cereal"]}, {"name": "Creamy Tomato Soup", "cuisine": "British", "image": "images/creamy-tomato-soup.jpg", "source": "https://www.bbcgoodfood.com/recipes/2604646/creamy-tomato-soup", "ingredients": ["olive oil", "onion", "celery", "carrots", "potatoes", "bay leaf", "tomato puree", "sugar", "white vinegar", "tomatoes", "passata", "vegetable stock cube", "milk"]}, {"name": "Saskatoon Pie", "cuisine": "Canadian", "image": "images/saskatoon-pie.jpg", "source": "https://canadianfoodfocus.org/canadian-food-stories/classic-canadian-recipes-saskatoon-pie/#recipe", "ingredients": ["flour", "butter", "vegetable shortening", "eggs", "vinegar", "saskatoon berries", "sugar", "cornstarch"]}, {"name": "Apple cake", "cuisine": "Netherlands", "image": "images/apple-cake.jpg", "source": "https://insimoneskitchen.com/dutch-apple-cake/#recipe", "ingredients": ["eggs", "sugar", "self raising flour", "melted butter", "vanilla extract", "cinnamon", "apples"]}, {"name": "Dutch Apple Pie", "cuisine": "Netherlands", "image": "images/dutch-apple-pie.jpg", "source": "https://insimoneskitchen.com/the-best-ever-apple-pie-recipe/#recipe", "ingredients": ["butter", "egg yolks", "flour", "sugar", "cinnamon", "raisins", "apples", "cold water"]}, {"name": "Corned Beef Hash", "cuisine": "British", "image": "images/corned-beef-hash.jpg", "source": "https://www.simplyrecipes.com/recipes/corned_beef_hash/", "ingredients": ["butter", "onion", "corned beef", "potatoes", "parsley"]}, {"name": "Toad In The Hole", "cuisine": "British", "image": "images/toad-in-the-hole.jpg", "source": "http://www.deliciousmagazine.co.uk/recipes/georgina-fuggles-horseradish-and-vine-tomato-toad-in-the-hole/", "ingredients": ["sausages", "vegetable oil", "flour", "eggs", "horseradish", "milk", "tomatoes"]}, {"name": "Lamb and Lemon Souvlaki", "cuisine": "Greek", "image": "images/lamb-and-lemon-souvlaki.jpg", "source": "https://www.bbcgoodfood.com/recipes/lamb-lemon-dill-souvlaki", "ingredients": ["garlic", "olive oil", "lemon", "dill", "lamb leg", "pita bread"]}, {"name": "CAFE LA LLAVE ESPRESSO ICE CREAM", "cuisine": "", "image": "images/cafe-la-llave-espresso-ice-cream.jpg", "source": "https://www.mybigfatcubanfamily.com/2023/09/cafe-la-llave-espresso-ice-cream/", "ingredients": ["heavy cream", "milk", "sugar", "egg yolks", "vanilla extract", "cafe la llave"]}];
+/*DISHES_END*/
+
+/* ---------- rules (tweak here) ---------- */
+const livesFor   = n => Math.max(1, Math.floor(n / 3));  // one heart per 3 ingredients, rounded down
+const optionsFor = n => Math.round(n * 2.5);             // total tiles on the grid (answers + decoys)
+const LAUNCH = Date.UTC(2026, 10, 9) / 864e5;            // puzzle #1 date (year, month 0-11, day)
+
+const EXTRA_DECOYS = ["lemon","honey","oregano","thyme","rosemary","cinnamon","paprika","bay leaf","carrots","celery","potatoes","rice","coconut milk","tofu","cheddar","mozzarella","bacon","sour cream","red wine","beef stock","zucchini","bell pepper","spinach","avocado","sesame seeds","mayonnaise","vinegar","lentils","chickpeas","pork","salmon","nutmeg","dill","mint","cabbage","corn","peas","basil","oats","tahini","curry powder","star anise","cardamom","lamb","ham","walnuts","almonds","raisins","maple syrup","hot sauce","ketchup","baking powder","vanilla","chocolate","cucumber","eggplant","kale","leeks","pineapple","apple","orange","tortillas","naan","miso","coconut oil","gruyere","ricotta","cream cheese","buttermilk"];
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const hue = s => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
+function rng(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function shuffle(a, r){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const overlaps = (a, b) => a.includes(b) || b.includes(a);
+const todayNum = () => { const d = new Date(); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5); };
+const X_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+/* storage (falls back to memory if the browser blocks it) */
+const mem = {};
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : (k in mem ? mem[k] : d); } catch { return k in mem ? mem[k] : d; } },
+  set(k, v){ mem[k] = v; try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+let S = Object.assign({ played: 0, wins: 0, streak: 0, best: 0, lastDay: 0, lastWinDay: 0, daily: null }, store.get("ingredientdle:v3", {}));
+const save = () => { if (!PREVIEW) store.set("ingredientdle:v3", S); };
+
+/* Add ?preview=5 to the address to look at dish #5 without touching your stats. */
+const PREVIEW = new URLSearchParams(location.search).get("preview");
+
+/* ---------- game ---------- */
+let dish, answers, tiles, guesses, maxLives, lives, done, day;
+
+function pickDish(){
+  day = PREVIEW !== null ? LAUNCH + (parseInt(PREVIEW, 10) || 0) : todayNum();
+  const order = shuffle(DISHES.map((_, i) => i), rng(20260109));   // fixed shuffle so the order isn't alphabetical
+  const n = Math.max(0, Math.round(day - LAUNCH));
+  return { d: DISHES[order[n % DISHES.length]], seed: Math.round(day) * 7919 };
+}
+
+function setup(){
+  const { d, seed } = pickDish(), r = rng(seed);
+  dish = d; answers = d.ingredients.slice();
+  const want = optionsFor(answers.length) - answers.length;
+  const pool = new Set(); DISHES.forEach(x => x.ingredients.forEach(i => pool.add(i))); EXTRA_DECOYS.forEach(i => pool.add(i));
+  const decoys = shuffle([...pool].filter(i => !answers.some(a => overlaps(a, i))), r).slice(0, want);
+  tiles = shuffle([...answers, ...decoys], r);
+  maxLives = livesFor(answers.length); guesses = []; lives = maxLives; done = false;
+
+  const no = Math.max(1, Math.round(day - LAUNCH) + 1);
+  const date = new Date(day * 864e5).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
+  $("kicker").textContent = "Daily dish No. " + no + " · " + date;
+  $("lede").innerHTML = `Find all <b>${answers.length} ingredients</b>. You have <b>${maxLives} ${maxLives === 1 ? "heart" : "hearts"}</b>.`;
+  $("cuisine").textContent = dish.cuisine ? dish.cuisine + " cuisine" : "World cuisine";
+  $("cuisine").style.display = dish.cuisine ? "" : "none";
+  $("nIng").textContent = answers.length + " ingredients";
+
+  const hero = $("hero"), img = $("img");
+  hero.classList.remove("err"); img.classList.remove("ready");
+  img.onload = () => img.classList.add("ready"); img.onerror = () => hero.classList.add("err");
+  img.src = dish.image;
+
+  buildBoard();
+  if (!PREVIEW && S.daily && S.daily.day === day) S.daily.guesses.forEach(g => apply(g, false));
+  paint();
+  if (done) setTimeout(() => showResult(), 300);
+}
+
+function buildBoard(){
+  const g = $("grid"); g.innerHTML = "";
+  tiles.forEach((t, i) => {
+    const b = document.createElement("button");
+    b.className = "tile"; b.dataset.t = t; b.style.animationDelay = Math.min(i * 10, 350) + "ms";
+    b.innerHTML = `<span class="ico" style="--h:${hue(t)}">${t[0].toUpperCase()}</span><span class="lbl">${cap(t)}</span>`;
+    b.onclick = () => guess(t);
+    g.appendChild(b);
+  });
+  const heart = '<svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 4 12.6a5 5 0 0 1 7.1-7l.9.9.9-.9a5 5 0 0 1 7.1 7z"/></svg>';
+  $("hearts").innerHTML = heart.repeat(maxLives);
+  $("slots").innerHTML = answers.map(() => '<div class="slot">?</div>').join("");
+}
+
+const tileEl = t => $("grid").querySelector(`[data-t="${CSS.escape(t)}"]`);
+const foundList = () => answers.filter(a => guesses.includes(a));
+
+function apply(t, animate){
+  if (done || guesses.includes(t)) return;
+  guesses.push(t);
+  const el = tileEl(t); el.disabled = true;
+  if (answers.includes(t)) el.classList.add("ok");
+  else {
+    el.classList.add("bad"); lives--;
+    const h = document.querySelectorAll(".heart")[lives];
+    h.classList.add("lost"); if (animate) h.classList.add("pop");
+    if (animate && navigator.vibrate) navigator.vibrate(50);
+  }
+  if (foundList().length === answers.length) done = "win";
+  else if (lives <= 0) done = "lose";
+  if (done) document.querySelectorAll(".tile").forEach(b => { b.disabled = true; if (answers.includes(b.dataset.t) && !guesses.includes(b.dataset.t)) b.classList.add("missed"); });
+}
+
+function guess(t){
+  if (done) return;
+  apply(t, true); paint();
+  S.daily = { day, guesses: guesses.slice() }; save();
+  if (done) finish();
+}
+
+function paint(){
+  const f = foundList();
+  $("progTxt").textContent = f.length + " of " + answers.length + " found";
+  $("progSub").textContent = done ? (done === "win" ? "Complete" : "Out of hearts") : lives + (lives === 1 ? " heart" : " hearts") + " left";
+  $("hearts").setAttribute("aria-label", lives + " of " + maxLives + " hearts left");
+  $("fill").style.width = (f.length / answers.length * 100) + "%";
+  const slots = $("slots").children;
+  answers.forEach((a, i) => {
+    const isF = f.includes(a);
+    slots[i].className = "slot" + (isF ? " on" : done ? " missed" : "");
+    slots[i].textContent = (isF || done) ? cap(a) : "?";
+  });
+}
+
+function finish(){
+  if (!PREVIEW && S.lastDay !== day){
+    S.played++; S.lastDay = day;
+    if (done === "win"){ S.wins++; S.streak = (S.lastWinDay === day - 1) ? S.streak + 1 : 1; S.lastWinDay = day; S.best = Math.max(S.best, S.streak); }
+    else S.streak = 0;
+    save();
+  }
+  if (done === "win") confetti();
+  setTimeout(showResult, done === "win" ? 900 : 650);
+}
+
+const statsHTML = () => {
+  const pct = S.played ? Math.round(S.wins / S.played * 100) : 0;
+  return `<div class="stats"><div class="stat"><b>${S.played}</b><span>Played</span></div><div class="stat"><b>${pct}%</b><span>Win rate</span></div><div class="stat"><b>${S.streak}</b><span>Streak</span></div><div class="stat"><b>${S.best}</b><span>Best</span></div></div>`;
+};
+
+function shareText(){
+  const no = Math.max(1, Math.round(day - LAUNCH) + 1), f = foundList().length;
+  return `Ingredientdle No. ${no}  ${done === "win" ? f : "X"}/${answers.length}  ${"♥".repeat(Math.max(lives, 0))}${"♡".repeat(maxLives - Math.max(lives, 0))}\n` +
+    guesses.map(g => answers.includes(g) ? "🟩" : "🟥").join("") + "\n" + location.origin + location.pathname;
+}
+
+function showResult(){
+  const f = foundList(), missed = answers.filter(a => !f.includes(a)), win = done === "win";
+  $("sResult").innerHTML = `
+    <button class="x" data-close aria-label="Close">${X_ICON}</button>
+    <h2>${win ? (lives === maxLives ? "Flawless." : "Well cooked.") : "Not this time."}</h2>
+    <p>${win ? "You found all " + answers.length + " ingredients with " + lives + (lives === 1 ? " heart" : " hearts") + " to spare." : "You found " + f.length + " of " + answers.length + " ingredients."}</p>
+    <div class="reveal"><img src="${dish.image}" alt="" referrerpolicy="no-referrer"><div><b>${dish.name}</b><span>${dish.cuisine ? dish.cuisine + " cuisine" : "World cuisine"}</span></div></div>
+    <h3>Ingredients</h3>
+    <div class="pills">${f.map(a => `<span class="pill g">${cap(a)}</span>`).join("")}${missed.map(a => `<span class="pill r">${cap(a)}</span>`).join("")}</div>
+    <h3>Your statistics</h3>${statsHTML()}
+    <div class="cta"><button class="btn" id="bShare">Share result</button><button class="btn ghost" data-close>Close</button></div>
+    <p class="next">Next dish in <b id="cd"></b></p>
+    <a class="src" href="${dish.source}" target="_blank" rel="noopener">View the original recipe ↗</a>`;
+  $("vResult").classList.add("show");
+  $("bShare").onclick = async () => {
+    const t = shareText();
+    try { if (navigator.share) { await navigator.share({ text: t }); return; } } catch { return; }
+    try { await navigator.clipboard.writeText(t); toast("Result copied to clipboard"); } catch { prompt("Copy your result:", t); }
+  };
+  tick(); clearInterval(window._cd); window._cd = setInterval(tick, 1000);
+}
+
+function tick(){
+  const el = $("cd"); if (!el) return;
+  const n = new Date(), m = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1), t = Math.floor((m - n) / 1000), p = x => String(x).padStart(2, "0");
+  el.textContent = p(Math.floor(t / 3600)) + ":" + p(Math.floor(t % 3600 / 60)) + ":" + p(t % 60);
+}
+
+function toast(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); }
+function confetti(){
+  const cols = ["#c8431c", "#2d7a4d", "#e0a526", "#1c1917", "#d9c9a8"];
+  for (let i = 0; i < 60; i++){
+    const c = document.createElement("i"); c.className = "confetti";
+    c.style.left = Math.random() * 100 + "vw"; c.style.background = cols[i % cols.length];
+    c.style.setProperty("--dx", (Math.random() * 160 - 80) + "px"); c.style.setProperty("--rot", (Math.random() * 720 - 360) + "deg");
+    c.style.animationDuration = (1.6 + Math.random() * 1.4) + "s"; c.style.animationDelay = Math.random() * .35 + "s";
+    document.body.appendChild(c); setTimeout(() => c.remove(), 3800);
+  }
+}
+
+const closeAll = () => document.querySelectorAll(".veil").forEach(v => v.classList.remove("show"));
+document.addEventListener("click", e => { if (e.target.closest("[data-close]") || e.target.classList.contains("veil")) closeAll(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeAll(); });
+$("bHelp").onclick = () => $("vHelp").classList.add("show");
+$("bStats").onclick = () => { $("sStats").innerHTML = `<button class="x" data-close aria-label="Close">${X_ICON}</button><h2>Statistics</h2><p>Your results are stored on this device.</p><h3>Overview</h3>${statsHTML()}<div class="cta"><button class="btn" data-close>Close</button></div>`; $("vStats").classList.add("show"); };
+
+setup();
+if (!PREVIEW && !store.get("ingredientdle:seen", false)){ store.set("ingredientdle:seen", true); if (!done) $("vHelp").classList.add("show"); }
+</script>
+</body>
+</html>
